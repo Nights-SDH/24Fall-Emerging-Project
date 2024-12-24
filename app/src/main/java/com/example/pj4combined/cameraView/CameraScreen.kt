@@ -40,7 +40,16 @@ import kotlin.coroutines.suspendCoroutine
 
 private lateinit var bitmapBuffer: Bitmap
 
-
+suspend fun initializeClassifier(
+    context: Context,
+    classifier: PersonClassifier,
+    threadNumber: Int,
+    useGPU: Boolean
+) {
+    withContext(Dispatchers.IO) {
+        classifier.initialize(context, threadNumber = threadNumber, useGPU = useGPU)
+    }
+}
 
 @Composable
 fun CameraScreen() {
@@ -104,15 +113,25 @@ fun CameraScreen() {
     if (detectionResults.value != null) {
         // TODO:
         //  Choose your inference time threshold
-        val inferenceTimeThreshold = 200000
+        val inferenceTimeThreshold = 500 // Galaxy S24+
 
         if (detectionResults.value!!.inferenceTime > inferenceTimeThreshold) {
             Log.d("CS330", "GPU too slow, switching to CPU start")
             // TODO:
             //  Create new classifier to be run on CPU with 2 threads
+            val personClassifierCPU = PersonClassifier()
+            LaunchedEffect(Unit) {
+                initializeClassifier(context, personClassifierCPU, threadNumber = 2, useGPU = false)
+            }
+            personClassifierCPU.setDetectorListener(listener)
 
             // TODO:
             //  Set imageAnalyzer to use the new classifier
+            imageAnalyzer.clearAnalyzer()
+            imageAnalyzer.setAnalyzer(cameraExecutor) { image ->
+                detectObjects(image, personClassifierCPU)
+                image.close()
+            }
 
             Log.d("CS330", "GPU too slow, switching to CPU done")
         }
