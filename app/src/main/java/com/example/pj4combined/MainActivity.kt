@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
                             if (startPreview.value) {
                                 // Check Permission
                                 handleCameraPermission()
-                                CameraScreen()
+                                CameraScreen() // TODO
                             } else {
                                 Button(
                                     onClick = {startPreview.value = true},modifier = Modifier.align(Alignment.Center)) {
